@@ -385,7 +385,11 @@ static ElfW(Addr) linker_main(KernelArgumentBlock& args, const char* exe_to_load
   ElfW(Ehdr)* elf_hdr = reinterpret_cast<ElfW(Ehdr)*>(si->base);
 
   // We haven't supported non-PIE since Lollipop for security reasons.
-  if (elf_hdr->e_type != ET_DYN) {
+  // except for legacy vendor daemons (e.g. the Galaxy S gpsd), which
+  // the kernel maps at their fixed address (load bias 0).
+  bool legacy_vendor_exec = strncmp(exe_path.c_str(), "/vendor/", 8) == 0 ||
+                            strncmp(exe_path.c_str(), "/system/vendor/", 15) == 0;
+  if (elf_hdr->e_type != ET_DYN && !legacy_vendor_exec) {
     // We don't use async_safe_fatal here because we don't want a tombstone:
     // even after several years we still find ourselves on app compatibility
     // investigations because some app's trying to launch an executable that

@@ -3973,7 +3973,11 @@ bool soinfo::link_image(const soinfo_list_t& global_group, const soinfo_list_t& 
   if (has_text_relocations) {
     // Fail if app is targeting M or above.
     int app_target_api_level = get_application_target_sdk_version();
-    if (app_target_api_level >= __ANDROID_API_M__) {
+    // legacy vendor blobs (e.g. the Galaxy S libsec-ril.so) predate the
+    // M text relocation ban; allow them for libraries under /vendor only.
+    bool legacy_vendor_blob = strncmp(get_realpath(), "/vendor/", 8) == 0 ||
+                              strncmp(get_realpath(), "/system/vendor/", 15) == 0;
+    if (app_target_api_level >= __ANDROID_API_M__ && !legacy_vendor_blob) {
       DL_ERR_AND_LOG("\"%s\" has text relocations (https://android.googlesource.com/platform/"
                      "bionic/+/master/android-changes-for-ndk-developers.md#Text-Relocations-"
                      "Enforced-for-API-level-23)", get_realpath());
